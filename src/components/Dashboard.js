@@ -83,6 +83,7 @@ const Dashboard = () => {
     const projectType = project.Project_type || 'N/A';
     const status = project.Status || 'Unknown';
     const startDate = project.Start_date ? new Date(project.Start_date).toLocaleDateString() : '-';
+    const dueDate = project.Due_date ? new Date(project.Due_date).toLocaleDateString() : '-';
     const completionDate = project.Completion_Date ? new Date(project.Completion_Date).toLocaleDateString() : '-';
     const progress = project.Progress || 0;
 
@@ -97,8 +98,8 @@ const Dashboard = () => {
           </span>
         </div>
         <p className="text-xs text-gray-600 mb-1 truncate">{projectType}</p>
-        <p className="text-xs text-gray-500 mb-2">Start: {startDate}</p>
-        <p className="text-xs text-gray-500 mb-2">Completion: {completionDate}</p>
+        <p className="text-xs text-gray-500 mb-1">Start: {startDate}</p>
+        <p className="text-xs text-gray-500 mb-2">Project Deadline: {dueDate}</p>
         <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner">
           <div
             className={`h-2 rounded-full transition-all duration-500 ease-in-out ${

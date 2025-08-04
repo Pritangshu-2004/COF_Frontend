@@ -172,67 +172,71 @@ const ProjectDetails = () => {
   }
 
   const handleStageChange = async (stageIndex) => {
-    const newCompletedStages = [...completedStages];
-    newCompletedStages[stageIndex] = true;
+    try {
+      // Create new completed stages array
+      const newCompletedStages = [...completedStages];
+      newCompletedStages[stageIndex] = true;
 
-    // Calculate new current stage (max completed stage + 1)
-    let newCurrentStage = Math.max(...newCompletedStages.map((completed, idx) => completed ? idx + 1 : 0));
-    const newProgress = Math.round((newCurrentStage / timeline.length) * 100);
-    const projectId = project.Id || project.id;
-
-    // Get new status from mapping
-    const newStatus = stageToStatus[newCurrentStage - 1] || project.status;
-
-    if (!projectId) {
-      alert('Invalid project ID. Cannot update project stage.');
-      return;
-    }
-
-    // Update backend and context with status
-    const success = await updateProject(projectId, {
-      Current_stage: newCurrentStage,
-      Progress: newProgress,
-      Status: newStatus,
-    });
-
-    if (success) {
-      fetchProjects(); // Update dashboard/global context
-
-      // Re-fetch the latest project data for this page
+      // Calculate new current stage (stageIndex + 1 since stages are 1-indexed)
+      const newCurrentStage = stageIndex + 1;
+      const newProgress = Math.round((newCurrentStage / timeline.length) * 100);
       const projectId = project.Id || project.id;
-      if (projectId) {
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/projects?id=${projectId}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.length > 0) {
-            const raw = data[0];
-            const mappedProject = {
-              ...raw,
-              id: raw.Id,
-              currentStage: raw.Current_stage ?? 1,
-              progress: raw.Progress ?? 0,
-              status: raw.Status ?? '',
-              priority: raw.Priority ?? '',
-              client: raw.Name ?? '',
-              project: raw.Project_type ?? '',
-              startDate: raw.Start_date ? new Date(raw.Start_date).toLocaleDateString() : '',
-              completion: raw.Completion_Date ? new Date(raw.Completion_Date).toLocaleDateString() : '',
-              notes: raw.Notes ?? '',
-              timeline: raw.timeline || defaultProject.timeline,
-              files: raw.files || [],
-              communications: raw.communications || [],
-            };
-            setProject(mappedProject);
-            setFiles(mappedProject.files);
-            setCommunications(mappedProject.communications);
-            setCompletedStages(
-              Array(mappedProject.timeline.length).fill(false).map((_, i) => i < mappedProject.currentStage)
-            );
-          }
-        }
+
+      // Get new status from mapping
+      const newStatus = stageToStatus[newCurrentStage - 1] || project.status;
+
+      if (!projectId) {
+        alert('Invalid project ID. Cannot update project stage.');
+        return;
       }
-    } else {
-      alert('Failed to update project stage. Please try again.');
+
+      console.log('Updating project stage:', {
+        projectId,
+        Current_stage: newCurrentStage,
+        Progress: newProgress,
+        Status: newStatus,
+      });
+
+      // Update backend and context with status
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/projects`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: projectId,
+          Current_stage: newCurrentStage,
+          Progress: newProgress,
+          Status: newStatus,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.message === 'Project updated successfully') {
+        // Update local state
+        setProject(prev => ({
+          ...prev,
+          currentStage: newCurrentStage,
+          progress: newProgress,
+          status: newStatus,
+        }));
+        
+        setCompletedStages(
+          Array(timeline.length).fill(false).map((_, i) => i < newCurrentStage)
+        );
+
+        // Refresh projects list
+        await fetchProjects();
+        
+        console.log('Successfully updated project stage to:', newCurrentStage);
+      } else {
+        console.error('Failed to update project:', result.message || 'Unknown error');
+        alert(`Failed to update project stage: ${result.message || 'Please try again.'}`);
+      }
+    } catch (error) {
+      console.error('Error updating project stage:', error);
+      alert('Failed to update project stage. Please check your connection and try again.');
     }
   };
 
@@ -325,20 +329,22 @@ const ProjectDetails = () => {
     'low': 'bg-blue-100 text-blue-800'
   };
 
+  
+
   // Mapping of stages to statuses
   const stageToStatus = [
-    'Briefed',         // 1: Client Introduction / Onboarding
-    'Briefed',         // 2: Briefing & Requirement Gathering
-    'Briefed',         // 3: Artwork Submission
-    'In Proofing',     // 4: Prepress
-    'In Proofing',     // 5: Proofing
-    'Approved',        // 6: Artwork Approval
-    'In Print',        // 7: Plate Making
-    'In Print',        // 8: Print Scheduling
-    'In Print',        // 9: Printing
-    'In Print',        // 10: Post-Press (If Applicable)
-    'Dispatched',      // 11: Packing & Dispatch
-    'Dispatched',      // 12: Closure & Feedback
+    'briefed',         // 1: Client Introduction / Onboarding
+    'briefed',         // 2: Briefing & Requirement Gathering
+    'briefed',         // 3: Artwork Submission
+    'proofing',        // 4: Prepress
+    'proofing',        // 5: Proofing
+    'approved',        // 6: Artwork Approval
+    'print',           // 7: Plate Making
+    'print',           // 8: Print Scheduling
+    'print',           // 9: Printing
+    'print',           // 10: Post-Press (If Applicable)
+    'dispatched',      // 11: Packing & Dispatch
+    'dispatched',      // 12: Closure & Feedback
   ];
 
   if (!project) {
@@ -381,16 +387,16 @@ const ProjectDetails = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
-            <div className="flex items-center text-gray-500 bg-gray-100 px-3 sm:px-4 py-2 rounded-full text-sm sm:text-base whitespace-nowrap">
-              <FaCalendarAlt className="mr-2 text-orange-500" />
-              <span>Start: {project.startDate}</span>
+            <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
+              <div className="flex items-center text-gray-500 bg-gray-100 px-3 sm:px-4 py-2 rounded-full text-sm sm:text-base whitespace-nowrap">
+                <FaCalendarAlt className="mr-2 text-orange-500" />
+                <span>Start: {project.startDate}</span>
+              </div>
+              <div className="flex items-center text-gray-500 bg-gray-100 px-3 sm:px-4 py-2 rounded-full text-sm sm:text-base whitespace-nowrap">
+                <FaCalendarAlt className="mr-2 text-orange-500" />
+                <span>Project Deadline: {project.Due_date ? new Date(project.Due_date).toLocaleDateString() : '-'}</span>
+              </div>
             </div>
-            <div className="flex items-center text-gray-500 bg-gray-100 px-3 sm:px-4 py-2 rounded-full text-sm sm:text-base whitespace-nowrap">
-              <FaCalendarAlt className="mr-2 text-orange-500" />
-              <span>Due: {project.completion}</span>
-            </div>
-          </div>
         </div>
       </div>
 
