@@ -21,15 +21,7 @@ const Sidebar = ({ user, onLogout, isSidebarOpen, toggleSidebar }) => {
 
   return (
     <>
-      {/* Hamburger menu button for small screens */}
-      <button
-        className="fixed top-4 left-4 z-20 p-2 rounded-md text-white bg-[#EA7125] lg:hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
-        onClick={toggleSidebar}
-        aria-label="Toggle sidebar"
-      >
-        {isSidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-      </button>
-
+      
       {/* Overlay backdrop */}
       {isSidebarOpen && (
         <div

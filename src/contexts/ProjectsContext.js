@@ -11,7 +11,9 @@ export const ProjectsProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/projects`);
+      const response = await fetch('https://cob.sequoia-print.com/api/projects', {
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
@@ -26,8 +28,9 @@ export const ProjectsProvider = ({ children }) => {
 
   const deleteProject = async (id) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/projects?id=${id}`, {
+      const response = await fetch(`https://cob.sequoia-print.com/api/projects/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
       if (response.ok) {
         setProjects(prev => prev.filter(p => p.Id !== id));
@@ -44,12 +47,13 @@ export const ProjectsProvider = ({ children }) => {
   const updateProject = async (id, updates) => {
     try {
       console.log('updateProject called with:', id, updates);
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/projects`, {
+      const response = await fetch(`https://cob.sequoia-print.com/api/projects/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id, ...updates }),
+        body: JSON.stringify(updates),
+        credentials: 'include',
       });
       console.log('updateProject response status:', response.status);
       if (response.ok) {

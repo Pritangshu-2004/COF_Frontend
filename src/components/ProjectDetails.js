@@ -101,7 +101,7 @@ const ProjectDetails = () => {
         const projectId = params.id || state?.project?.Id || state?.project?.id;
         if (!projectId) return;
         // Fetch project details
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/projects?id=${projectId}`);
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://cob.sequoia-print.com'}/api/projects?id=${projectId}`);
         let mappedProject = null;
         if (response.ok) {
           const data = await response.json();
@@ -130,7 +130,7 @@ const ProjectDetails = () => {
           console.error('Failed to fetch project details');
         }
         // Fetch files
-        const filesRes = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/files?projectId=${projectId}`);
+        const filesRes = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://cob.sequoia-print.com'}/api/files?projectId=${projectId}`);
         if (filesRes.ok) {
           const filesData = await filesRes.json();
           setFiles(filesData.map(f => ({
@@ -143,7 +143,7 @@ const ProjectDetails = () => {
           })));
         }
         // Fetch communications
-        const commRes = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/communications?projectId=${projectId}`);
+        const commRes = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://cob.sequoia-print.com'}/api/communications?projectId=${projectId}`);
         if (commRes.ok) {
           const commData = await commRes.json();
           setCommunications(commData.map(c => ({
@@ -166,10 +166,7 @@ const ProjectDetails = () => {
 
   // Find the first incomplete stage index
   let firstIncompleteStageIndex = completedStages.findIndex(completed => !completed);
-  if (firstIncompleteStageIndex === -1) {
-    // If all stages completed, fallback to first stage (index 0) to show button for testing
-    firstIncompleteStageIndex = 0;
-  }
+  const allStagesCompleted = firstIncompleteStageIndex === -1;
 
   const handleStageChange = async (stageIndex) => {
     try {
@@ -198,13 +195,12 @@ const ProjectDetails = () => {
       });
 
       // Update backend and context with status
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/projects`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://cob.sequoia-print.com'}/api/projects/${projectId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id: projectId,
           Current_stage: newCurrentStage,
           Progress: newProgress,
           Status: newStatus,
@@ -245,7 +241,7 @@ const ProjectDetails = () => {
     if (!newFile.name) return;
     const projectId = params.id || state?.project?.Id || state?.project?.id;
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/files`, {
+      const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://cob.sequoia-print.com'}/api/files`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -258,7 +254,7 @@ const ProjectDetails = () => {
       });
       if (res.ok) {
         // Re-fetch files after successful add
-        const filesRes = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/files?projectId=${projectId}`);
+        const filesRes = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://cob.sequoia-print.com'}/api/files?projectId=${projectId}`);
         if (filesRes.ok) {
           const filesData = await filesRes.json();
           setFiles(filesData.map(f => ({
@@ -282,7 +278,7 @@ const ProjectDetails = () => {
     if (!newCommunication.note) return;
     const projectId = params.id || state?.project?.Id || state?.project?.id;
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/communications`, {
+      const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://cob.sequoia-print.com'}/api/communications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -294,7 +290,7 @@ const ProjectDetails = () => {
       });
       if (res.ok) {
         // Re-fetch communications after successful add
-        const commRes = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/communications?projectId=${projectId}`);
+        const commRes = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://cob.sequoia-print.com'}/api/communications?projectId=${projectId}`);
         if (commRes.ok) {
           const commData = await commRes.json();
           setCommunications(commData.map(c => ({
@@ -459,16 +455,16 @@ const ProjectDetails = () => {
                     } truncate max-w-full`}>
                     {stage.stage}
                   </h4>
-                  {(index === firstIncompleteStageIndex) && (
-                    <button
-                      onClick={() => {
-                        console.log('Mark as Complete button clicked for stage:', index);
-                        handleStageChange(index);
-                      }}
-                      className="mt-3 text-xs sm:text-sm px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
-                    >
-                      Mark as Complete
-                    </button>
+                  {(!allStagesCompleted && index === firstIncompleteStageIndex) && (
+                  <button
+                  onClick={() => {
+                  console.log('Mark as Complete button clicked for stage:', index);
+                  handleStageChange(index);
+                  }}
+                  className="mt-3 text-xs sm:text-sm px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+                  >
+                  Mark as Complete
+                  </button>
                   )}
                 </div>
               </div>
@@ -534,8 +530,7 @@ const ProjectDetails = () => {
                       onClick={async () => {
                         if (!window.confirm('Are you sure you want to delete this file?')) return;
                         try {
-                          const projectId = params.id || state?.project?.Id || state?.project?.id;
-                          const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/files?id=${file.id}`, {
+                          const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://cob.sequoia-print.com'}/api/files/${file.id}`, {
                             method: 'DELETE',
                           });
                           if (res.ok) {
@@ -600,8 +595,7 @@ const ProjectDetails = () => {
                     onClick={async () => {
                       if (!window.confirm('Are you sure you want to delete this communication log?')) return;
                       try {
-                        const projectId = params.id || state?.project?.Id || state?.project?.id;
-                        const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/communications?id=${comm.id}`, {
+                        const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://cob.sequoia-print.com'}/api/communications/${comm.id}`, {
                           method: 'DELETE',
                         });
                         if (res.ok) {

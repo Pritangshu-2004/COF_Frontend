@@ -8,6 +8,8 @@ import Login from './components/Login';
 import ProjectDetails from './components/ProjectDetails';
 import { ProjectsProvider } from './contexts/ProjectsContext';
 import TopNavbar from './components/TopNavbar';
+import * as Protected from './utils/protected';
+import { FiMenu, FiX } from 'react-icons/fi';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -16,10 +18,14 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('Protected module:', Protected);
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    if (storedUser && Protected.isAuthenticated()) {
       setUser(JSON.parse(storedUser));
       setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+      setUser(null);
     }
   }, []);
 
@@ -33,6 +39,7 @@ function App() {
     setIsAuthenticated(false);
     setUser(null);
     localStorage.removeItem('user');
+    Protected.removeToken();
     navigate('/');
   };
 
@@ -46,6 +53,15 @@ function App() {
 
   return (
     <ProjectsProvider>
+      {/* Hamburger menu button for mobile */}
+      <button
+        className="fixed top-4 left-4 z-60 p-2 flex items-center rounded-md text-white bg-[#EA7125] lg:hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
+        onClick={toggleSidebar}
+        aria-label="Toggle sidebar"
+      >
+        {isSidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+        <span className="ml-2 text-base font-semibold block sm:hidden">Menu</span>
+      </button>
       {/* Sidebar is fixed, so it's outside the flow */}
       <Sidebar 
         user={user} 

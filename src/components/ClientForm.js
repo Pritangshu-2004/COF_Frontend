@@ -12,6 +12,15 @@ import {
 import { useNavigate } from "react-router-dom";
 import { ProjectsContext } from '../contexts/ProjectsContext';
 
+const token = localStorage.getItem('token');
+const headers = {
+  'Content-Type': 'application/json',
+};
+
+if (token) {
+  headers['Authorization'] = `Bearer ${token}`;
+}
+
 const ClientForm = () => {
   const navigate = useNavigate();
   const { fetchProjects, projects } = useContext(ProjectsContext);
@@ -21,6 +30,7 @@ const ClientForm = () => {
     phone: "",
     company: "",
     projectType: "",
+    priority: "medium",
     notes: "",
     dueDate: ""
   });
@@ -81,19 +91,31 @@ const ClientForm = () => {
         Progress: 0, // Default progress
       };
 
+      const token = localStorage.getItem('token') || document.cookie.match(new RegExp('(^| )token=([^;]+)'))?.[2];
+      console.log('Submitting client data:', payload, 'with token:', token);
+      
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/projects`, 
+        'https://cob.sequoia-print.com/api/projects', 
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify(payload),
+          credentials: 'include',
         }
       );
 
       if (!response.ok) {
-        throw new Error('Failed to save client');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Server response:', response.status, errorData);
+        throw new Error(errorData.message || `Server error: ${response.status}`);
       }
 
       // Reset form on success

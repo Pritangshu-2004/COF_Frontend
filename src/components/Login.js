@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaSignInAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
+import Cookies from 'js-cookie';
 
 const Login = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({
@@ -14,15 +15,20 @@ const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/login`, {
+      const response = await fetch('https://cob.sequoia-print.com/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(credentials)
+        body: JSON.stringify(credentials),
+        credentials: 'include'
       });
       if (response.ok) {
         const userData = await response.json();
+        // Set token cookie using js-cookie for visibility in Application > Cookies
+        if (userData.token) {
+          Cookies.set('token', userData.token, { expires: 1, path: '/' });
+        }
         onLogin(userData);
       } else {
         const errorData = await response.json();
